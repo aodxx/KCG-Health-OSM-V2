@@ -17,4 +17,5 @@
 - [x] ตั้งค่า `VITE_APPS_SCRIPT_URL`/fallback ใน frontend และทดสอบ Web App endpoint
 - [x] เพิ่ม GitHub Actions workflow สำหรับ build และ deploy GitHub Pages; workflow อยู่ใน `.github/workflows/deploy-pages.yml`
 - [x] ตั้งค่า Vite base path สำหรับ repository `KCG-Health-OSM-V2`
-- [ ] ตั้งค่า GitHub variable `VITE_GOOGLE_CLIENT_ID` สำหรับ workflow build; ผู้ใช้ต้องเพิ่มจาก GitHub Settings
+- [ ] ตั้งค่า GitHub variable `VITE_GOOGLE_CLIENT_ID` สำหรับ workflow build; ผู้ใช้มอบค่าให้เพิ่มผ่าน GitHub CLI
+- [x] แก้ GitHub Actions ให้ใช้ workflow เป็นแหล่งกำหนด pnpm เพียงจุดเดียว, ตัด `packageManager` ที่ซ้ำออก และอัปเดต action runner เป็น Node.js 24/actions รุ่นใหม่
