@@ -37,4 +37,5 @@
 - [ ] เพิ่ม Risk Flag, Referral และ Follow-up API พร้อม permission, audit และสถานะเคส
 - [ ] เพิ่ม UI screening/review และติดตามเคสใน flow เยี่ยมบ้าน
 - [x] เพิ่ม backend API สำหรับ Screening Templates/Responses, Manual Risk, acknowledge/resolve, Referral status และ Follow-up completion โดยตรวจ session/area/audit
-- [ ] เชื่อม UI แบบคัดกรองและติดตาม Risk/Referral/Follow-up เข้ากับ API และเพิ่ม Template ที่หน่วยงานอนุมัติ
+- [x] เชื่อม UI แบบคัดกรองเข้ากับ `screening.templates`/`screening.save`; ถ้ายังไม่มี Template ที่หน่วยงานอนุมัติจะแสดง empty state อย่างปลอดภัย
+- [ ] เชื่อม UI ติดตาม Risk/Referral/Follow-up เข้ากับ API และเพิ่ม Template ที่หน่วยงานอนุมัติ
