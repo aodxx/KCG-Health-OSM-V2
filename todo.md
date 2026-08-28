@@ -12,6 +12,8 @@
 - [ ] พัฒนาทะเบียน งานเยี่ยมบ้าน การคัดกรอง ความเสี่ยง และรายงานตาม MVP
 - [x] ทดสอบ unit/API contract, TypeScript, production build และ error states ของ flow หลัก; Dashboard เรียก dashboard + tasks.list และเปิดงานเรียก tasks.updateStatus
 - [ ] ก่อน Production ต้องปิด Anyone with link และแยกโฟลเดอร์/ชีต Production
+- [ ] ตรวจสอบ Authorized JavaScript origin ของ Google OAuth และเพิ่ม aodaod3826@gmail.com ในชีต Users Staging
+- [ ] ตรวจสอบและแก้ปุ่มเข้าสู่ระบบ Google บน GitHub Pages ที่ไม่ทำงาน
 - [x] commit และ push การเปลี่ยนแปลงที่ผ่านการทดสอบไปยัง `main` ที่ commit `ce7cb33`
 - [x] ผู้ใช้คัดลอก `apps-script/Code.gs` และ `apps-script/appsscript.json` ไปยัง Google Apps Script แล้ว Deploy เป็น Web App สำหรับ Staging
 - [x] ตั้งค่า `VITE_APPS_SCRIPT_URL`/fallback ใน frontend และทดสอบ Web App endpoint
