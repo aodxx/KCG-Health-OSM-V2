@@ -25,5 +25,11 @@
 - [x] แก้ GitHub Actions ให้ใช้ workflow เป็นแหล่งกำหนด pnpm เพียงจุดเดียว, ตัด `packageManager` ที่ซ้ำออก และอัปเดต action runner เป็น Node.js 24/actions รุ่นใหม่
 - [x] ทดสอบจำลอง auth/session, role osm, area scope, Dashboard และ Visit flow ด้วยข้อมูลสังเคราะห์; auth จริงต้องใช้ Google ID token จากผู้ใช้
 - [ ] ตรวจสอบและแก้ error สีแดงล่าสุดใน GitHub Actions/Pages พร้อมยืนยันผล run ใหม่
-- [ ] ทดสอบ login จริงจาก GitHub Pages และยืนยันว่า Dashboard แสดงผู้ใช้จากชีต Users ถูกต้อง
-- [x] ตรวจสอบและแก้ปุ่ม Google Login บน GitHub Pages ที่ผู้ใช้รายงานว่ากดไม่ได้ หลังตั้งค่า VITE_GOOGLE_CLIENT_ID; เพิ่ม Google rendered button และ fallback
+- [ ] ทดสอบ login จริงจาก GitHub Pages และยืนยันว่า Dashboard แสดงผู้ใช้จากชีต Users ถูกต้อง; รอผู้ใช้กด Google account จริง
+- [x] ตรวจสอบและแก้ปุ่ม Google Login บน GitHub Pages ที่ผู้ใช้รายงานว่ากดไม่ได้ หลังตั้งค่า VITE_GOOGLE_CLIENT_ID; deploy rendered GIS button แล้ว
+- [x] ทบทวน PRD กับระบบปัจจุบันและจัดลำดับช่องว่างของฟังก์ชันที่ต้องพัฒนาต่อ
+- [x] เติมทะเบียนชุมชนแบบค้นหา, public bootstrap, risk summary, BMI/Measurements, PWA app shell และการตั้งค่าที่ทำได้ใน Staging ตาม PRD; Screening/Export ขั้นเต็มยังคงค้าง
+- [ ] ตรวจสิทธิ์พื้นที่ Audit Log และความพร้อมก่อน Production; รอบนี้เพิ่ม area scope และ task events แต่ยังต้อง harden ก่อน Production
+- [x] รอบ PRD: เพิ่ม area-scoped registry search, profile, risk summary, server-side BMI/Measurements, task events, public.home bootstrap, idempotency key และ PWA App Shell
+- [ ] รอบถัดไป: เพิ่ม workflow Screening Template/Responses, Risk/Referral/Follow-up mutations และ Report Export จริง
+- [ ] รอบถัดไป: เพิ่ม Admin Security/Audit search, file attachment private access และ scheduled backup/cleanup

@@ -1,0 +1,13 @@
+{
+  "name": "KCG Health OSM",
+  "short_name": "KCG Health OSM",
+  "description": "ระบบสนับสนุนงานสุขภาพชุมชน รพ.สต.โคกชะงาย",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "/KCG-Health-OSM-V2/",
+  "scope": "/KCG-Health-OSM-V2/",
+  "display": "standalone",
+  "background_color": "#f7f6f1",
+  "theme_color": "#19364b",
+  "icons": []
+}
