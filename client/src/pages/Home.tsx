@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowUpRight, Bell, BookOpen, CalendarDays, Check, ChevronRight, CircleHelp, ClipboardCheck, ClipboardList, Clock3, FileDown, Home as HomeIcon, LayoutDashboard, LogIn, MapPin, Menu, Phone, Plus, Search, ShieldCheck, Siren, Sparkles, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,8 @@ import { apiConfig, apiRequest } from "@/lib/api";
 
 type Task = { taskId?: string; taskCode?: string; title?: string; personName?: string; personId?: string; householdId?: string; areaId?: string; taskType?: string; priority?: string; status?: string; dueAt?: string; instruction?: string; person?: string; place?: string; type?: string; due?: string };
 type DashboardData = { metrics?: { today?: number; overdue?: number; completed?: number }; tasks?: Task[] };
-type GoogleIdentity = { accounts: { id: { initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void; prompt: () => void } } };
+type GoogleCredential = { credential: string };
+type GoogleIdentity = { accounts: { id: { initialize: (config: { client_id: string; callback: (response: GoogleCredential) => void }) => void; renderButton: (parent: HTMLElement, options: { theme: string; size: string; width: number }) => void; prompt: () => void } } };
 
 const navItems = [{ label: "ภาพรวม", icon: LayoutDashboard }, { label: "งานเยี่ยมบ้าน", icon: ClipboardList }, { label: "ทะเบียนชุมชน", icon: Users }, { label: "รายงาน", icon: FileDown }];
 
@@ -43,24 +44,27 @@ export default function Home() {
 
   useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
+  const handleGoogleCredential = useCallback(async ({ credential }: GoogleCredential) => {
+    try { setLoading(true); const response = await apiRequest<{ sessionToken: string }>("auth.google", { idToken: credential, deviceLabel: navigator.userAgent.slice(0, 80) }); if (response.data?.sessionToken) { sessionStorage.setItem("kcg_session_token", response.data.sessionToken); setLoggedIn(true); toast.success("เข้าสู่ระบบแล้ว"); } }
+    catch (err) { toast.error(err instanceof Error ? err.message : "เข้าสู่ระบบไม่สำเร็จ"); }
+    finally { setLoading(false); }
+  }, []);
+
   const login = () => {
     if (!apiConfig.configured) { toast.error("ยังไม่ได้ตั้งค่า API"); return; }
     const googleIdentity = (window as unknown as { google?: GoogleIdentity }).google;
-    if (!googleIdentity) { toast.error("ยังโหลด Google Sign-In ไม่เสร็จ", { description: "กรุณารีเฟรชหน้าแล้วลองใหม่" }); return; }
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+    if (!googleIdentity) { toast.error("ยังโหลด Google Sign-In ไม่เสร็จ", { description: "กรุณารีเฟรชหน้าแล้วลองใหม่" }); return; }
     if (!clientId) { toast.error("ยังไม่ได้ตั้งค่า Google Client ID", { description: "เพิ่ม VITE_GOOGLE_CLIENT_ID ใน environment ของ frontend" }); return; }
-    googleIdentity.accounts.id.initialize({ client_id: clientId, callback: async ({ credential }) => {
-      try { setLoading(true); const response = await apiRequest<{ sessionToken: string }>("auth.google", { idToken: credential, deviceLabel: navigator.userAgent.slice(0, 80) }); if (response.data?.sessionToken) { sessionStorage.setItem("kcg_session_token", response.data.sessionToken); setLoggedIn(true); toast.success("เข้าสู่ระบบแล้ว"); } }
-      catch (err) { toast.error(err instanceof Error ? err.message : "เข้าสู่ระบบไม่สำเร็จ"); }
-      finally { setLoading(false); }
-    }}); googleIdentity.accounts.id.prompt();
+    googleIdentity.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+    googleIdentity.accounts.id.prompt();
   };
 
   const openTask = async (task: Task) => { const taskId = task.taskId || task.taskCode; try { if (taskId) await apiRequest("tasks.updateStatus", { taskId, status: "in_progress" }); setSelectedTask(task); setView("visit"); } catch (err) { toast.error(err instanceof Error ? err.message : "เปิดงานไม่สำเร็จ"); } };
   const logout = async () => { try { await apiRequest("auth.logout"); } catch { /* session may already be expired */ } sessionStorage.removeItem("kcg_session_token"); setLoggedIn(false); setDashboard(null); setView("dashboard"); toast.success("ออกจากระบบแล้ว"); };
 
   if (publicMode) return <PublicPortal onBack={() => setPublicMode(false)} />;
-  if (!loggedIn) return <StaffLogin loading={loading} onLogin={login} onPublic={() => setPublicMode(true)} />;
+  if (!loggedIn) return <StaffLogin loading={loading} onLogin={login} onPublic={() => setPublicMode(true)} onCredential={handleGoogleCredential} />;
   if (view === "visit") return <VisitForm task={selectedTask} onBack={() => setView("dashboard")} onSaved={() => { setView("dashboard"); void loadDashboard(); }} />;
 
   const tasks = dashboard?.tasks || [];
@@ -85,7 +89,30 @@ export default function Home() {
 
 function TaskRow({ task, onOpen }: { task: Task; onOpen: () => void }) { const id = task.taskId || task.taskCode || "-"; const person = task.personName || task.person || task.title || "ไม่ระบุชื่อ"; const place = task.place || task.areaId || task.householdId || "ไม่ระบุพื้นที่"; const type = task.taskType || task.type || "เยี่ยมบ้าน"; const due = task.due || (task.dueAt ? new Date(task.dueAt).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }) : "ยังไม่กำหนด"); const urgent = task.priority === "urgent" || task.priority === "เร่งด่วน"; return <div className="task-row"><div className={`task-priority ${urgent ? "coral" : "blue"}`} /><div className="task-main"><div className="flex flex-wrap items-center gap-2"><span className="task-code">{id}</span><StatusPill tone={urgent ? "coral" : "blue"}>{task.status || (urgent ? "เร่งด่วน" : "รอดำเนินการ")}</StatusPill></div><h3>{person}</h3><p>{type} <span>·</span> {place}</p></div><div className="task-due"><span>{due}</span><button className="task-arrow" onClick={onOpen} aria-label={`เปิดแบบฟอร์ม ${person}`}><ChevronRight size={18} /></button></div></div>; }
 
-function StaffLogin({ loading, onLogin, onPublic }: { loading: boolean; onLogin: () => void; onPublic: () => void }) { return <div className="public-page"><header className="public-topbar"><Brand /><button className="public-back" onClick={onPublic}><HomeIcon size={16} /> หน้าสำหรับประชาชน</button></header><main className="public-content"><section className="public-hero"><div className="public-hero-copy"><div className="eyebrow"><span className="sun-line" /> KCG Health OSM · Staging</div><h1>เข้าสู่ระบบ<br /><em>งานสุขภาพชุมชน</em></h1><p>ใช้บัญชี Google ที่ได้รับอนุญาตเพื่อเปิด Dashboard และบันทึกเยี่ยมบ้านตามพื้นที่รับผิดชอบ</p><Button className="primary-button" onClick={onLogin} disabled={loading}><LogIn size={17} /> {loading ? "กำลังตรวจสอบ..." : "เข้าสู่ระบบด้วย Google"}</Button><p className="mt-4 text-xs text-[#6f8792]">ระบบจะไม่เปิดทะเบียนหรือข้อมูลสุขภาพจนกว่าจะตรวจสอบสิทธิ์สำเร็จ</p></div><div className="hero-image-wrap"><img src="/manus-storage/kcg-community-hero_d89be46d.jpg" alt="เจ้าหน้าที่และ อสม. ในชุมชน" /></div></section></main></div>; }
+function StaffLogin({ loading, onLogin, onPublic, onCredential }: { loading: boolean; onLogin: () => void; onPublic: () => void; onCredential: (response: GoogleCredential) => void }) {
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+  useEffect(() => {
+    let attempts = 0;
+    let timer: number | undefined;
+    const render = () => {
+      const googleIdentity = (window as unknown as { google?: GoogleIdentity }).google;
+      const parent = googleButtonRef.current;
+      if (googleIdentity && clientId && parent) {
+        googleIdentity.accounts.id.initialize({ client_id: clientId, callback: onCredential });
+        parent.replaceChildren();
+        googleIdentity.accounts.id.renderButton(parent, { theme: "outline", size: "large", width: 320 });
+        return;
+      }
+      if (attempts++ < 30) timer = window.setTimeout(render, 200);
+    };
+    render();
+    return () => { if (timer) window.clearTimeout(timer); };
+  }, [clientId, onCredential]);
+
+  return <div className="public-page"><header className="public-topbar"><Brand /><button className="public-back" onClick={onPublic}><HomeIcon size={16} /> หน้าสำหรับประชาชน</button></header><main className="public-content"><section className="public-hero"><div className="public-hero-copy"><div className="eyebrow"><span className="sun-line" /> KCG Health OSM · Staging</div><h1>เข้าสู่ระบบ<br /><em>งานสุขภาพชุมชน</em></h1><p>ใช้บัญชี Google ที่ได้รับอนุญาตเพื่อเปิด Dashboard และบันทึกเยี่ยมบ้านตามพื้นที่รับผิดชอบ</p><div ref={googleButtonRef} className="mt-6 min-h-[40px]" aria-label="เข้าสู่ระบบด้วย Google" /> <Button className="primary-button mt-3" onClick={onLogin} disabled={loading}><LogIn size={17} /> {loading ? "กำลังตรวจสอบ..." : "เปิดหน้าต่างเข้าสู่ระบบอีกครั้ง"}</Button><p className="mt-4 text-xs text-[#6f8792]">ระบบจะไม่เปิดทะเบียนหรือข้อมูลสุขภาพจนกว่าจะตรวจสอบสิทธิ์สำเร็จ</p></div><div className="hero-image-wrap"><img src="/manus-storage/kcg-community-hero_d89be46d.jpg" alt="เจ้าหน้าที่และ อสม. ในชุมชน" /></div></section></main></div>;
+}
 
 function VisitForm({ task, onBack, onSaved }: { task?: Task; onBack: () => void; onSaved: () => void }) { const [form, setForm] = useState({ personId: task?.personId || "", householdId: task?.householdId || "", areaId: task?.areaId || "", visitType: task?.taskType || "home_visit", symptomSummary: "", observation: "", actionTaken: "", weightKg: "", heightCm: "" }); const [review, setReview] = useState(false); const [saving, setSaving] = useState(false); const [saved, setSaved] = useState<{ visitId?: string; bmi?: number | null }>(); const [error, setError] = useState<string | null>(null); const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value })); const submit = async () => { setSaving(true); setError(null); try { const result = await apiRequest<{ visitId: string; bmi: number | null }>("visits.create", { ...form, taskId: task?.taskId || task?.taskCode, clientRecordedAt: new Date().toISOString(), weightKg: form.weightKg ? Number(form.weightKg) : undefined, heightCm: form.heightCm ? Number(form.heightCm) : undefined }); setSaved(result.data); toast.success("บันทึกเยี่ยมบ้านแล้ว", { description: result.data?.visitId }); } catch (err) { setError(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ"); } finally { setSaving(false); } };
   return <div className="public-page"><header className="public-topbar"><Brand /><button className="public-back" onClick={onBack}><X size={16} /> กลับ Dashboard</button></header><main className="content-wrap max-w-5xl mx-auto"><section className="welcome-row"><div><div className="eyebrow"><span className="sun-line" /> แบบฟอร์มเยี่ยมบ้าน · ตรวจสอบก่อนส่ง</div><h1>บันทึกการเยี่ยมบ้าน <span className="wave-mark">/</span></h1><p>{task ? `งาน ${task.taskId || task.taskCode || "ที่เลือก"}` : "บันทึกงานใหม่จากพื้นที่รับผิดชอบ"}</p></div></section>{saved ? <section className="task-panel"><div className="notice-bar"><div className="notice-icon"><Check size={16} /></div><div><strong>บันทึกสำเร็จ</strong><span>Visit ID: {saved.visitId} {saved.bmi ? `· BMI ${saved.bmi}` : ""}</span></div></div><Button className="primary-button mt-8" onClick={onSaved}>กลับไป Dashboard</Button></section> : <section className="task-panel"><div className="form-grid"><label>Person ID<Input value={form.personId} onChange={(e) => update("personId", e.target.value)} placeholder="รหัสบุคคล" /></label><label>Household ID<Input value={form.householdId} onChange={(e) => update("householdId", e.target.value)} placeholder="รหัสครัวเรือน" /></label><label>Area ID<Input value={form.areaId} onChange={(e) => update("areaId", e.target.value)} placeholder="รหัสพื้นที่" /></label><label>ประเภทเยี่ยมบ้าน<Input value={form.visitType} onChange={(e) => update("visitType", e.target.value)} /></label><label className="full">สรุปอาการ<Input value={form.symptomSummary} onChange={(e) => update("symptomSummary", e.target.value)} placeholder="กรอกเท่าที่จำเป็น" /></label><label className="full">การสังเกต<textarea value={form.observation} onChange={(e) => update("observation", e.target.value)} placeholder="บันทึกข้อสังเกตจากการเยี่ยมบ้าน" /></label><label className="full">การดำเนินการ<textarea value={form.actionTaken} onChange={(e) => update("actionTaken", e.target.value)} placeholder="คำแนะนำหรือการส่งต่อ" /></label><label>น้ำหนัก (กก.)<Input type="number" value={form.weightKg} onChange={(e) => update("weightKg", e.target.value)} /></label><label>ส่วนสูง (ซม.)<Input type="number" value={form.heightCm} onChange={(e) => update("heightCm", e.target.value)} /></label></div>{error && <div className="mt-5 rounded-lg bg-[#f9e5df] p-3 text-sm text-[#a94835]">{error}</div>}{review ? <div className="mt-8 rounded-xl border border-[#eadfb6] bg-[#fffaf0] p-5"><strong>ตรวจสอบก่อนส่ง</strong><p className="mt-2 text-sm text-[#536d7b]">ข้อมูลนี้จะถูกส่งไปยัง Google Sheets และสร้าง Audit Log คุณยืนยันการบันทึกหรือไม่</p><div className="mt-4 flex gap-3"><Button className="primary-button" onClick={() => void submit()} disabled={saving}>{saving ? "กำลังบันทึก..." : "ยืนยันส่งข้อมูล"}</Button><Button variant="outline" onClick={() => setReview(false)}>กลับไปแก้ไข</Button></div></div> : <div className="mt-8 flex gap-3"><Button className="primary-button" onClick={() => setReview(true)} disabled={!form.personId || !form.householdId || !form.visitType}><Check size={17} /> ตรวจสอบก่อนส่ง</Button><Button variant="outline" onClick={onBack}>ยกเลิก</Button></div>}</section>}</main></div>; }

@@ -12,8 +12,9 @@
 - [ ] พัฒนาทะเบียน งานเยี่ยมบ้าน การคัดกรอง ความเสี่ยง และรายงานตาม MVP
 - [x] ทดสอบ unit/API contract, TypeScript, production build และ error states ของ flow หลัก; Dashboard เรียก dashboard + tasks.list และเปิดงานเรียก tasks.updateStatus
 - [ ] ก่อน Production ต้องปิด Anyone with link และแยกโฟลเดอร์/ชีต Production
-- [ ] ตรวจสอบ Authorized JavaScript origin ของ Google OAuth และเพิ่ม aodaod3826@gmail.com ในชีต Users Staging
-- [ ] ตรวจสอบและแก้ปุ่มเข้าสู่ระบบ Google บน GitHub Pages ที่ไม่ทำงาน
+- [x] ตรวจสอบ Authorized JavaScript origin ของ Google OAuth และเพิ่ม aodaod3826@gmail.com ในชีต Users Staging
+- [x] เพิ่มบัญชี อ๊อด เกตุแก้ว ในชีต Users ด้วย role `osm`, status `active` และเบอร์ปกปิด `080-***-0748`
+- [x] ตรวจสอบและแก้ปุ่มเข้าสู่ระบบ Google บน GitHub Pages ที่ไม่ทำงาน; สาเหตุคือ project path route และ cache ของ bundle เก่า
 - [x] commit และ push การเปลี่ยนแปลงที่ผ่านการทดสอบไปยัง `main` ที่ commit `ce7cb33`
 - [x] ผู้ใช้คัดลอก `apps-script/Code.gs` และ `apps-script/appsscript.json` ไปยัง Google Apps Script แล้ว Deploy เป็น Web App สำหรับ Staging
 - [x] ตั้งค่า `VITE_APPS_SCRIPT_URL`/fallback ใน frontend และทดสอบ Web App endpoint
@@ -22,3 +23,7 @@
 - [x] ตั้งค่า GitHub variable `VITE_GOOGLE_CLIENT_ID` สำหรับ workflow build; ผู้ใช้เพิ่มค่าใน GitHub Actions Variables แล้ว
 - [x] รัน Pages workflow หลังเพิ่ม Google Client ID และตรวจสอบ build/deploy; run `33139749305` สำเร็จ
 - [x] แก้ GitHub Actions ให้ใช้ workflow เป็นแหล่งกำหนด pnpm เพียงจุดเดียว, ตัด `packageManager` ที่ซ้ำออก และอัปเดต action runner เป็น Node.js 24/actions รุ่นใหม่
+- [x] ทดสอบจำลอง auth/session, role osm, area scope, Dashboard และ Visit flow ด้วยข้อมูลสังเคราะห์; auth จริงต้องใช้ Google ID token จากผู้ใช้
+- [ ] ตรวจสอบและแก้ error สีแดงล่าสุดใน GitHub Actions/Pages พร้อมยืนยันผล run ใหม่
+- [ ] ทดสอบ login จริงจาก GitHub Pages และยืนยันว่า Dashboard แสดงผู้ใช้จากชีต Users ถูกต้อง
+- [x] ตรวจสอบและแก้ปุ่ม Google Login บน GitHub Pages ที่ผู้ใช้รายงานว่ากดไม่ได้ หลังตั้งค่า VITE_GOOGLE_CLIENT_ID; เพิ่ม Google rendered button และ fallback
