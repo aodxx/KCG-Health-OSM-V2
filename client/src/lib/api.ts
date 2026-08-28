@@ -6,14 +6,11 @@
 
 export type ApiResponse<T> = { ok: boolean; requestId: string; apiVersion: string; data?: T; error?: { code: string; message: string } };
 
-const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
+const API_URL = (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined) || "https://script.google.com/macros/s/AKfycbx-HW8T0xB83aRzlFHFe_n0DhBGBNfdAaSLys5tIG0o52I1AmkaaHnwKSL0BSFqZ9jJxQ/exec";
 
 export async function apiRequest<T>(action: string, payload: Record<string, unknown> = {}): Promise<ApiResponse<T>> {
   const requestId = crypto.randomUUID();
   const sessionToken = sessionStorage.getItem("kcg_session_token");
-  if (!API_URL) {
-    return { ok: false, requestId, apiVersion: "v1", error: { code: "API_NOT_CONFIGURED", message: "ขณะนี้ระบบอยู่ในโหมดสาธิต ยังไม่ได้เชื่อมต่อข้อมูลจริง" } };
-  }
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
