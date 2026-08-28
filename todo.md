@@ -15,3 +15,6 @@
 - [x] commit และ push การเปลี่ยนแปลงที่ผ่านการทดสอบไปยัง `main` ที่ commit `ce7cb33`
 - [x] ผู้ใช้คัดลอก `apps-script/Code.gs` และ `apps-script/appsscript.json` ไปยัง Google Apps Script แล้ว Deploy เป็น Web App สำหรับ Staging
 - [x] ตั้งค่า `VITE_APPS_SCRIPT_URL`/fallback ใน frontend และทดสอบ Web App endpoint
+- [ ] เพิ่ม GitHub Actions workflow สำหรับ build และ deploy GitHub Pages
+- [ ] ตั้งค่า Vite base path สำหรับ repository `KCG-Health-OSM-V2`
+- [ ] ตั้งค่า GitHub variable `VITE_GOOGLE_CLIENT_ID` สำหรับ workflow build
