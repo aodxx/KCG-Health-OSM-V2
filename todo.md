@@ -24,7 +24,7 @@
 - [x] รัน Pages workflow หลังเพิ่ม Google Client ID และตรวจสอบ build/deploy; run `33139749305` สำเร็จ
 - [x] แก้ GitHub Actions ให้ใช้ workflow เป็นแหล่งกำหนด pnpm เพียงจุดเดียว, ตัด `packageManager` ที่ซ้ำออก และอัปเดต action runner เป็น Node.js 24/actions รุ่นใหม่
 - [x] ทดสอบจำลอง auth/session, role osm, area scope, Dashboard และ Visit flow ด้วยข้อมูลสังเคราะห์; auth จริงต้องใช้ Google ID token จากผู้ใช้
-- [ ] ตรวจสอบและแก้ error สีแดงล่าสุดใน GitHub Actions/Pages พร้อมยืนยันผล run ใหม่
+- [x] ตรวจสอบและแก้ error สีแดงล่าสุดใน GitHub Actions/Pages พร้อมยืนยันผล run ใหม่; run `33142893867` ผ่านทั้ง build และ deploy
 - [ ] ทดสอบ login จริงจาก GitHub Pages และยืนยันว่า Dashboard แสดงผู้ใช้จากชีต Users ถูกต้อง; รอผู้ใช้กด Google account จริง
 - [x] ตรวจสอบและแก้ปุ่ม Google Login บน GitHub Pages ที่ผู้ใช้รายงานว่ากดไม่ได้ หลังตั้งค่า VITE_GOOGLE_CLIENT_ID; deploy rendered GIS button แล้ว
 - [x] ทบทวน PRD กับระบบปัจจุบันและจัดลำดับช่องว่างของฟังก์ชันที่ต้องพัฒนาต่อ
@@ -33,3 +33,8 @@
 - [x] รอบ PRD: เพิ่ม area-scoped registry search, profile, risk summary, server-side BMI/Measurements, task events, public.home bootstrap, idempotency key และ PWA App Shell
 - [ ] รอบถัดไป: เพิ่ม workflow Screening Template/Responses, Risk/Referral/Follow-up mutations และ Report Export จริง
 - [ ] รอบถัดไป: เพิ่ม Admin Security/Audit search, file attachment private access และ scheduled backup/cleanup
+- [ ] ออกแบบและเพิ่ม Screening Template/Responses โดยใช้คำถามและเกณฑ์ที่หน่วยงานอนุมัติเท่านั้น
+- [ ] เพิ่ม Risk Flag, Referral และ Follow-up API พร้อม permission, audit และสถานะเคส
+- [ ] เพิ่ม UI screening/review และติดตามเคสใน flow เยี่ยมบ้าน
+- [x] เพิ่ม backend API สำหรับ Screening Templates/Responses, Manual Risk, acknowledge/resolve, Referral status และ Follow-up completion โดยตรวจ session/area/audit
+- [ ] เชื่อม UI แบบคัดกรองและติดตาม Risk/Referral/Follow-up เข้ากับ API และเพิ่ม Template ที่หน่วยงานอนุมัติ

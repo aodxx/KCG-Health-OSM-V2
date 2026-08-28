@@ -48,6 +48,15 @@ function route_(action, body, requestId) {
     case 'person.list': return personList_(body, requestId);
     case 'registry.search': return registrySearch_(body, requestId);
     case 'risk.list': return riskList_(body, requestId);
+    case 'risk.createManual': return createManualRisk_(body, requestId);
+    case 'risk.acknowledge': return updateRisk_(body, requestId, 'acknowledged');
+    case 'risk.resolve': return updateRisk_(body, requestId, 'resolved');
+    case 'referral.create': return createReferral_(body, requestId);
+    case 'referral.updateStatus': return updateReferralStatus_(body, requestId);
+    case 'followup.list': return followupList_(body, requestId);
+    case 'followup.complete': return completeFollowup_(body, requestId);
+    case 'screening.templates': return screeningTemplates_(body, requestId);
+    case 'screening.save': return saveScreening_(body, requestId);
     case 'visits.create': return createVisit_(body, requestId);
     default: throw new Error('UNKNOWN_ACTION');
   }
@@ -156,6 +165,48 @@ function riskList_(body, requestId) {
   if (body.status) rows = rows.filter(row => row.status === body.status);
   return { items: rows.slice(0, 100) };
 }
+
+function createManualRisk_(body, requestId) {
+  const session = requireSession_(body.sessionToken);
+  if (!body.personId || !body.reason) throw new Error('VALIDATION_ERROR');
+  const person = readRows_(db_(), SHEETS.PERSONS).find(row => row.personId === body.personId && row.recordStatus !== 'deleted');
+  if (!person || !canAccessRow_(person, session.user)) throw new Error('NOT_FOUND');
+  const now = new Date().toISOString(); const riskFlagId = Utilities.getUuid();
+  appendRow_(db_(), SHEETS.RISK_FLAGS, { riskFlagId, personId: body.personId, visitId: body.visitId || '', riskCode: body.riskCode || 'MANUAL', sourceType: 'manual', sourceId: requestId, ruleId: '', ruleVersion: '', suggestedLevel: body.suggestedLevel || 'medium', confirmedLevel: '', status: 'pending_review', reason: String(body.reason).slice(0, 500), detectedAt: now, acknowledgedAt: '', acknowledgedBy: '', assignedUserId: '', resolvedAt: '', resolvedBy: '', outcomeCode: '', createdAt: now, createdBy: session.user.userId, updatedAt: now, updatedBy: session.user.userId, recordStatus: 'active' });
+  audit_('CREATE', 'RiskFlag', riskFlagId, session.user.userId, requestId, 'success'); return { riskFlagId, status: 'pending_review' };
+}
+
+function updateRisk_(body, requestId, targetStatus) {
+  const session = requireSession_(body.sessionToken); if (!body.riskFlagId) throw new Error('VALIDATION_ERROR');
+  const ss = db_(); const rows = readRows_(ss, SHEETS.RISK_FLAGS); const risk = rows.find(row => row.riskFlagId === body.riskFlagId && row.recordStatus !== 'deleted');
+  if (!risk || !riskRowsForUser_(session.user).some(row => row.riskFlagId === risk.riskFlagId)) throw new Error('NOT_FOUND');
+  const now = new Date().toISOString(); const changes = { status: targetStatus, updatedAt: now, updatedBy: session.user.userId };
+  if (targetStatus === 'acknowledged') Object.assign(changes, { acknowledgedAt: now, acknowledgedBy: session.user.userId, assignedUserId: body.assignedUserId || session.user.userId, confirmedLevel: body.confirmedLevel || risk.suggestedLevel || 'medium' });
+  if (targetStatus === 'resolved') Object.assign(changes, { resolvedAt: now, resolvedBy: session.user.userId, outcomeCode: body.outcomeCode || '', reason: body.outcomeNote || risk.reason });
+  updateById_(ss, SHEETS.RISK_FLAGS, 'riskFlagId', body.riskFlagId, changes); audit_('UPDATE_STATUS', 'RiskFlag', body.riskFlagId, session.user.userId, requestId, 'success'); return { riskFlagId: body.riskFlagId, status: targetStatus };
+}
+
+function createReferral_(body, requestId) {
+  const session = requireSession_(body.sessionToken); if (!body.personId || !body.toUnit || !body.reason) throw new Error('VALIDATION_ERROR');
+  const person = readRows_(db_(), SHEETS.PERSONS).find(row => row.personId === body.personId && row.recordStatus !== 'deleted'); if (!person || !canAccessRow_(person, session.user)) throw new Error('NOT_FOUND');
+  const now = new Date().toISOString(); const referralId = Utilities.getUuid();
+  appendRow_(db_(), SHEETS.REFERRALS, { referralId, riskFlagId: body.riskFlagId || '', personId: body.personId, fromUnit: body.fromUnit || 'รพ.สต.โคกชะงาย', toUnit: String(body.toUnit).slice(0, 120), reason: String(body.reason).slice(0, 500), referredAt: now, appointmentAt: body.appointmentAt || '', status: 'referred', outcomeCode: '', outcomeNote: '', closedAt: '', closedBy: '', createdAt: now, createdBy: session.user.userId, updatedAt: now, updatedBy: session.user.userId, recordStatus: 'active' });
+  audit_('CREATE', 'Referral', referralId, session.user.userId, requestId, 'success'); return { referralId, status: 'referred' };
+}
+
+function updateReferralStatus_(body, requestId) {
+  const session = requireSession_(body.sessionToken); if (!body.referralId || !body.status) throw new Error('VALIDATION_ERROR');
+  const allowed = ['referred', 'accepted', 'in_progress', 'completed', 'cancelled']; if (allowed.indexOf(body.status) < 0) throw new Error('VALIDATION_ERROR');
+  const ss = db_(); const rows = readRows_(ss, SHEETS.REFERRALS); const referral = rows.find(row => row.referralId === body.referralId && row.recordStatus !== 'deleted'); if (!referral) throw new Error('NOT_FOUND');
+  const person = readRows_(ss, SHEETS.PERSONS).find(row => row.personId === referral.personId); if (!person || !canAccessRow_(person, session.user)) throw new Error('NOT_FOUND');
+  const now = new Date().toISOString(); const changes = { status: body.status, outcomeCode: body.outcomeCode || referral.outcomeCode || '', outcomeNote: body.outcomeNote || referral.outcomeNote || '', updatedAt: now, updatedBy: session.user.userId }; if (body.status === 'completed' || body.status === 'cancelled') Object.assign(changes, { closedAt: now, closedBy: session.user.userId }); updateById_(ss, SHEETS.REFERRALS, 'referralId', body.referralId, changes); audit_('UPDATE_STATUS', 'Referral', body.referralId, session.user.userId, requestId, 'success'); return { referralId: body.referralId, status: body.status };
+}
+
+function followupList_(body, requestId) { const session = requireSession_(body.sessionToken); const rows = readRows_(db_(), SHEETS.FOLLOWUPS).filter(row => row.recordStatus !== 'deleted' && (!body.status || row.status === body.status)); const allowedPeople = new Set(scopedPersons_(session.user).map(row => row.personId)); return { items: rows.filter(row => allowedPeople.has(row.personId) || row.assignedUserId === session.user.userId).slice(0, 100) }; }
+function completeFollowup_(body, requestId) { const session = requireSession_(body.sessionToken); if (!body.followUpId || !body.resultCode) throw new Error('VALIDATION_ERROR'); const followup = readRows_(db_(), SHEETS.FOLLOWUPS).find(row => row.followUpId === body.followUpId && row.recordStatus !== 'deleted'); if (!followup) throw new Error('NOT_FOUND'); const person = readRows_(db_(), SHEETS.PERSONS).find(row => row.personId === followup.personId); if (!person || !canAccessRow_(person, session.user)) throw new Error('NOT_FOUND'); const now = new Date().toISOString(); updateById_(db_(), SHEETS.FOLLOWUPS, 'followUpId', body.followUpId, { contactedAt: now, resultCode: body.resultCode, note: String(body.note || '').slice(0, 500), status: 'completed', completedAt: now, updatedAt: now, updatedBy: session.user.userId }); audit_('COMPLETE', 'FollowUp', body.followUpId, session.user.userId, requestId, 'success'); return { followUpId: body.followUpId, status: 'completed' }; }
+
+function screeningTemplates_(body, requestId) { requireSession_(body.sessionToken); const rows = hasSheet_(db_(), 'TemplateDefinitions') ? readRows_(db_(), 'TemplateDefinitions') : []; return { items: rows.filter(row => row.status === 'published' && row.recordStatus !== 'deleted').map(row => ({ templateId: row.templateId, templateType: row.templateType, templateVersion: row.templateVersion, nameTh: row.nameTh, schemaJson: row.schemaJson || '', ruleSetId: row.ruleSetId || '' })) }; }
+function saveScreening_(body, requestId) { const session = requireSession_(body.sessionToken); if (!body.visitId || !body.personId || !body.templateId || !Array.isArray(body.responses)) throw new Error('VALIDATION_ERROR'); const person = readRows_(db_(), SHEETS.PERSONS).find(row => row.personId === body.personId && row.recordStatus !== 'deleted'); if (!person || !canAccessRow_(person, session.user)) throw new Error('NOT_FOUND'); const ss = db_(); const now = new Date().toISOString(); body.responses.slice(0, 100).forEach((response) => { if (!response.questionCode || response.answerValue === undefined) throw new Error('VALIDATION_ERROR'); appendRow_(ss, SHEETS.SCREENING, { responseId: Utilities.getUuid(), visitId: body.visitId, personId: body.personId, templateId: body.templateId, templateVersion: body.templateVersion || '', questionCode: String(response.questionCode), answerType: String(response.answerType || 'text'), answerValue: String(response.answerValue).slice(0, 1000), score: response.score ?? '', answeredAt: now, createdAt: now, createdBy: session.user.userId, updatedAt: now, updatedBy: session.user.userId, recordStatus: 'active' }); }); audit_('CREATE', 'Screening', body.visitId, session.user.userId, requestId, 'success'); return { visitId: body.visitId, saved: body.responses.length }; }
 
 function createVisit_(body, requestId) {
   const session = requireSession_(body.sessionToken);

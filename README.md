@@ -36,9 +36,11 @@ Apps Script จะใช้ชีตต่อไปนี้ โดยแถว�
 
 ## API contract เบื้องต้น
 
-Backend รับ `POST` ที่ body เป็น JSON และคืน JSON พร้อม `requestId`, `apiVersion` และ `serverTimestamp` เสมอ ตัวอย่าง action ที่รองรับใน Staging ได้แก่ `health`, `public.home`, `auth.google`, `auth.logout`, `me.getProfile`, `dashboard`, `report.dashboard`, `tasks.list`, `tasks.updateStatus`, `area.list`, `household.list`, `person.list`, `registry.search`, `risk.list` และ `visits.create` พร้อมบันทึก Measurements สำหรับน้ำหนัก/ส่วนสูง/BMI ทุกคำขอข้อมูลสุขภาพต้องส่ง `sessionToken` และตรวจสิทธิ์ฝั่ง server
+Backend รับ `POST` ที่ body เป็น JSON และคืน JSON พร้อม `requestId`, `apiVersion` และ `serverTimestamp` เสมอ ตัวอย่าง action ที่รองรับใน Staging ได้แก่ `health`, `public.home`, `auth.google`, `auth.logout`, `me.getProfile`, `dashboard`, `report.dashboard`, `tasks.list`, `tasks.updateStatus`, `area.list`, `household.list`, `person.list`, `registry.search`, `risk.list`, `risk.createManual`, `risk.acknowledge`, `risk.resolve`, `referral.create`, `referral.updateStatus`, `followup.list`, `followup.complete`, `screening.templates`, `screening.save` และ `visits.create` พร้อมบันทึก Measurements สำหรับน้ำหนัก/ส่วนสูง/BMI ทุกคำขอข้อมูลสุขภาพต้องส่ง `sessionToken` และตรวจสิทธิ์ฝั่ง server
 
 ## ความคืบหน้าตาม PRD
+
+รอบนี้เติม API สำหรับ Screening Template/Responses, Manual Risk Flag, Risk acknowledge/resolve, Referral status และ Follow-up completion แล้ว โดยระบบจะอ่านเฉพาะ Template ที่มี `status=published` จากชีต `TemplateDefinitions` และยังไม่ใส่คำถามหรือเกณฑ์ทางการแพทย์ตัวอย่างเอง
 
 รอบนี้เติมความสามารถ P0 ที่ปลอดภัยสำหรับ Staging ได้แก่ area-scoped registry search, user profile ใน Dashboard, risk summary, server-side BMI validation/calculation, task transition event log, public portal bootstrap จาก Apps Script, API idempotency key และ PWA app shell โดยยังไม่เปิดใช้เกณฑ์ทางการแพทย์อัตโนมัติจนกว่าจะมี Rule/Template ที่หน่วยงานอนุมัติ
 
